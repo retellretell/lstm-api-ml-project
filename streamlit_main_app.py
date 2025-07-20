@@ -8,7 +8,7 @@ import pandas as pd
 import numpy as np
 import asyncio
 from datetime import datetime, timedelta
-import graph_objects as go
+import plotly.graph_objs as go
 import plotly.express as px
 from typing import Dict, List, Optional
 import logging
