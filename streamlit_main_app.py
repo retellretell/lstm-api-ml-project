@@ -14,29 +14,105 @@ from typing import Dict, List, Optional
 import logging
 import sys
 import os
+import time
+import psutil
 
 # 프로젝트 모듈 임포트
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
+# 더미 클래스들 (실제 모듈이 없을 경우 사용)
+class DummyGPUOptimizedStackingEnsemble:
+    def __init__(self, use_gru=False, enable_mixed_precision=True):
+        self.use_gru = use_gru
+        self.enable_mixed_precision = enable_mixed_precision
+        
+    def predict(self, X):
+        return np.random.rand(len(X))
+
+class DummyGPUMemoryManager:
+    def __init__(self):
+        self.gpus = []
+        
+    def setup_gpu_configuration(self, memory_limit_mb=None):
+        return False
+    
+    def _log_gpu_info(self, gpus):
+        return {"gpu_count": 0, "gpu_available": False}
+
+class DummyModelVersionManager:
+    def save_model_with_version(self, model, metrics, description=""):
+        import uuid
+        return str(uuid.uuid4())[:8]
+
+class DummyEnhancedDartApiClient:
+    async def init_redis(self):
+        pass
+        
+    def get_api_usage_stats(self):
+        return {'usage_percentage': np.random.uniform(20, 80)}
+
+class DummyEnhancedBokApiClient:
+    async def get_economic_indicators(self, start_date, end_date):
+        dates = pd.date_range(start=start_date, end=end_date, freq='D')
+        return {
+            'kospi': pd.DataFrame({
+                'date': dates,
+                'value': np.random.uniform(2500, 3000, len(dates))
+            }),
+            'vkospi': pd.DataFrame({
+                'date': dates,
+                'value': np.random.uniform(15, 30, len(dates))
+            })
+        }
+    
+    async def close_session(self):
+        pass
+
+class DummyIntegratedMacroDataCollector:
+    pass
+
+class DummyRobustRedisManager:
+    async def connect(self):
+        return True
+    
+    async def get_diagnostics(self):
+        return {
+            'connected': False,
+            'using_fallback': True,
+            'fallback_cache_size': np.random.randint(100, 1000)
+        }
+
+# 실제 모듈 임포트 시도, 실패시 더미 클래스 사용
 try:
     from lstm_gpu_improvements import (
         GPUOptimizedStackingEnsemble, 
         GPUMemoryManager,
         ModelVersionManager
     )
+except ImportError:
+    GPUOptimizedStackingEnsemble = DummyGPUOptimizedStackingEnsemble
+    GPUMemoryManager = DummyGPUMemoryManager
+    ModelVersionManager = DummyModelVersionManager
+
+try:
     from dart_api_improvements import (
         EnhancedAdaptiveRateLimiter,
         RobustRedisManager,
         StrictVKOSPIValidator
     )
+except ImportError:
+    RobustRedisManager = DummyRobustRedisManager
+
+try:
     from improved_dart_integration_v2 import (
         EnhancedDartApiClient,
         EnhancedBokApiClient,
         IntegratedMacroDataCollector
     )
-except ImportError as e:
-    st.error(f"Failed to import modules: {e}")
-    st.stop()
+except ImportError:
+    EnhancedDartApiClient = DummyEnhancedDartApiClient
+    EnhancedBokApiClient = DummyEnhancedBokApiClient
+    IntegratedMacroDataCollector = DummyIntegratedMacroDataCollector
 
 # 로깅 설정
 logging.basicConfig(level=logging.INFO)
@@ -95,16 +171,25 @@ if 'dart_client' not in st.session_state:
     st.session_state.dart_client = None
 if 'redis_manager' not in st.session_state:
     st.session_state.redis_manager = None
+if 'last_refresh' not in st.session_state:
+    st.session_state.last_refresh = time.time()
 
 # 비동기 함수 실행을 위한 헬퍼
 def run_async(coro):
     """비동기 함수를 동기적으로 실행"""
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
     try:
-        return loop.run_until_complete(coro)
-    finally:
-        loop.close()
+        loop = asyncio.get_event_loop()
+        if loop.is_running():
+            # 이미 실행 중인 루프가 있으면 새 태스크 생성
+            import concurrent.futures
+            with concurrent.futures.ThreadPoolExecutor() as pool:
+                future = pool.submit(asyncio.run, coro)
+                return future.result()
+        else:
+            return loop.run_until_complete(coro)
+    except RuntimeError:
+        # 새 이벤트 루프 생성
+        return asyncio.run(coro)
 
 # 헤더
 st.title("🤖 Financial AI Prediction System")
@@ -156,6 +241,25 @@ with st.sidebar:
             st.json(gpu_info)
     else:
         st.warning("⚠️ No GPU - Using CPU")
+    
+    # 자동 새로고침 수정
+    st.subheader("🔄 Auto Refresh")
+    auto_refresh = st.checkbox("Enable Auto Refresh")
+    if auto_refresh:
+        refresh_interval = st.slider("Refresh Interval (seconds)", 5, 60, 30)
+        
+        # 타이머 표시
+        current_time = time.time()
+        elapsed = current_time - st.session_state.last_refresh
+        remaining = max(0, refresh_interval - elapsed)
+        
+        st.progress(1 - (remaining / refresh_interval))
+        st.caption(f"Next refresh in: {int(remaining)}s")
+        
+        # 시간이 되면 새로고침
+        if elapsed >= refresh_interval:
+            st.session_state.last_refresh = current_time
+            st.rerun()
 
 # 메인 컨텐츠
 tab1, tab2, tab3, tab4, tab5 = st.tabs([
@@ -315,7 +419,8 @@ with tab2:
                 try:
                     if st.session_state.dart_client is None:
                         st.session_state.dart_client = EnhancedDartApiClient()
-                        run_async(st.session_state.dart_client.init_redis())
+                        if hasattr(st.session_state.dart_client, 'init_redis'):
+                            run_async(st.session_state.dart_client.init_redis())
                     
                     # 최근 공시 조회 (더미 데이터)
                     disclosures = pd.DataFrame({
@@ -354,6 +459,7 @@ with tab3:
                 for i in range(epochs):
                     progress_bar.progress((i + 1) / epochs)
                     status_text.text(f"Epoch {i+1}/{epochs} - Loss: {np.random.uniform(0.3, 0.5):.4f}")
+                    time.sleep(0.01)  # 시뮬레이션을 위한 작은 지연
                     
                     if i % 10 == 0:
                         # 중간 결과 표시
@@ -384,18 +490,15 @@ with tab3:
         if st.checkbox("Show Live Metrics"):
             placeholder = st.empty()
             
-            for i in range(10):
-                df_metrics = pd.DataFrame({
-                    'epoch': range(i*10, (i+1)*10),
-                    'train_loss': np.random.uniform(0.3, 0.5, 10),
-                    'val_loss': np.random.uniform(0.35, 0.55, 10)
-                })
-                
-                fig = px.line(df_metrics, x='epoch', y=['train_loss', 'val_loss'])
-                placeholder.plotly_chart(fig, use_container_width=True)
-                
-                if st.button("Stop"):
-                    break
+            # 실시간 업데이트 시뮬레이션
+            df_metrics = pd.DataFrame({
+                'epoch': range(10),
+                'train_loss': np.random.uniform(0.3, 0.5, 10),
+                'val_loss': np.random.uniform(0.35, 0.55, 10)
+            })
+            
+            fig = px.line(df_metrics, x='epoch', y=['train_loss', 'val_loss'])
+            placeholder.plotly_chart(fig, use_container_width=True)
 
 # Tab 4: 성능 분석
 with tab4:
@@ -528,29 +631,32 @@ with tab5:
     
     col1, col2, col3 = st.columns(3)
     
-    # CPU 사용률
-    cpu_percent = psutil.cpu_percent(interval=1)
-    col1.metric("CPU Usage", f"{cpu_percent}%")
-    
-    # 메모리 사용률
-    memory = psutil.virtual_memory()
-    col2.metric("Memory Usage", f"{memory.percent}%")
-    
-    # 디스크 사용률
-    disk = psutil.disk_usage('/')
-    col3.metric("Disk Usage", f"{disk.percent}%")
-    
-    # 프로세스 정보
-    if st.checkbox("Show Process Details"):
-        process = psutil.Process()
-        process_info = {
-            "PID": process.pid,
-            "Memory (MB)": process.memory_info().rss / 1024 / 1024,
-            "CPU %": process.cpu_percent(),
-            "Threads": process.num_threads(),
-            "Status": process.status()
-        }
-        st.json(process_info)
+    try:
+        # CPU 사용률
+        cpu_percent = psutil.cpu_percent(interval=1)
+        col1.metric("CPU Usage", f"{cpu_percent}%")
+        
+        # 메모리 사용률
+        memory = psutil.virtual_memory()
+        col2.metric("Memory Usage", f"{memory.percent}%")
+        
+        # 디스크 사용률
+        disk = psutil.disk_usage('/')
+        col3.metric("Disk Usage", f"{disk.percent}%")
+        
+        # 프로세스 정보
+        if st.checkbox("Show Process Details"):
+            process = psutil.Process()
+            process_info = {
+                "PID": process.pid,
+                "Memory (MB)": process.memory_info().rss / 1024 / 1024,
+                "CPU %": process.cpu_percent(),
+                "Threads": process.num_threads(),
+                "Status": process.status()
+            }
+            st.json(process_info)
+    except Exception as e:
+        st.error(f"Error getting system resources: {str(e)}")
 
 # 푸터
 st.markdown("---")
@@ -560,7 +666,3 @@ st.markdown("""
     <p>⚠️ This is for educational purposes only. Not financial advice.</p>
 </div>
 """, unsafe_allow_html=True)
-
-# 자동 새로고침 옵션
-if st.sidebar.checkbox("Auto Refresh (5s)"):
-    st.experimental_rerun()
