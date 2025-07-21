@@ -17,6 +17,8 @@ import json
 import os
 from typing import Dict, List, Optional, Tuple
 
+from news_sentiment import get_recent_news
+
 # 로깅 설정
 logging.basicConfig(
     level=logging.INFO,
@@ -817,20 +819,34 @@ with tab2:
                 except Exception as e:
                     st.error(f"VKOSPI 데이터 로드 실패: {e}")
         
-        # 뉴스 센티먼트 분석 (더미)
+        # 뉴스 센티먼트 분석
         st.subheader("📰 Recent Market News")
-        
-        news_data = [
-            {"date": datetime.now() - timedelta(hours=2), "title": "삼성전자, AI 반도체 투자 확대 발표", "sentiment": "positive"},
-            {"date": datetime.now() - timedelta(hours=5), "title": "미 연준, 금리 동결 시사", "sentiment": "neutral"},
-            {"date": datetime.now() - timedelta(hours=8), "title": "중국 경제 지표 부진", "sentiment": "negative"},
-            {"date": datetime.now() - timedelta(days=1), "title": "KOSPI 3000 돌파 전망", "sentiment": "positive"},
-            {"date": datetime.now() - timedelta(days=1, hours=6), "title": "원/달러 환율 상승세", "sentiment": "negative"}
-        ]
-        
+
+        if st.button("🔄 Refresh News", key="refresh_news"):
+            st.session_state.recent_news = get_recent_news(1)
+
+        if 'recent_news' not in st.session_state:
+            st.session_state.recent_news = get_recent_news(1)
+
+        news_data = st.session_state.recent_news
+
+        ticker_scores = {}
         for news in news_data:
             icon = "🟢" if news['sentiment'] == 'positive' else "🔴" if news['sentiment'] == 'negative' else "⚪"
-            st.write(f"{icon} **{news['title']}** - {news['date'].strftime('%m/%d %H:%M')}")
+            st.write(f"{icon} [**{news['title']}**]({news['url']}) - {news['date'].strftime('%m/%d %H:%M')}")
+
+            score = 1 if news['sentiment'] == 'positive' else -1 if news['sentiment'] == 'negative' else 0
+            for code, info in STOCK_INFO.items():
+                if info['name'] in news['title'] or code in news['title']:
+                    ticker_scores.setdefault(code, 0)
+                    ticker_scores[code] += score
+
+        if ticker_scores:
+            sorted_scores = sorted(ticker_scores.items(), key=lambda x: x[1], reverse=True)
+            top_buys = [f"{STOCK_INFO[c]['name']} ({c})" for c, s in sorted_scores if s > 0][:3]
+            stop_loss = [f"{STOCK_INFO[c]['name']} ({c})" for c, s in sorted_scores if s < 0][:3]
+            st.write("**Top Buys:** " + (", ".join(top_buys) if top_buys else "N/A"))
+            st.write("**Stop Loss:** " + (", ".join(stop_loss) if stop_loss else "N/A"))
 
 # Tab 3: 모델 학습
 with tab3:
