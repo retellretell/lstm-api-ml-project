@@ -113,3 +113,4 @@ cython>=0.29.0,<3.1.0  # C 확장 (선택적)
 # 메모리 최적화 설정:
 # export TF_FORCE_GPU_ALLOW_GROWTH=true
 # export TF_GPU_MEMORY_LIMIT=4096  # MB 단위
+textblob>=0.17.0,<0.18.0
