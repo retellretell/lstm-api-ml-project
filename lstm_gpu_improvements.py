@@ -11,7 +11,7 @@ from datetime import datetime, timedelta
 import uuid
 import pickle
 import asyncio
-from contextlib import asynccontextmanager
+from contextlib import contextmanager, nullcontext
 
 # TensorFlow 관련 임포트 (안전한 방식)
 try:
@@ -399,18 +399,15 @@ class GPUOptimizedStackingEnsemble:
         data_hash = hash(str(X.shape) + str(X.mean()) + str(X.std()))
         return f"pred_{data_hash}_{self.use_gru}_{self.is_trained}"
     
-    @asynccontextmanager
-    async def _gpu_memory_context(self):
+    @contextmanager
+    def _gpu_memory_context(self):
         """GPU 메모리 관리 컨텍스트"""
+        cm = self.gpu_manager.gpu_memory_context() if self.gpu_manager else nullcontext()
         try:
-            if self.gpu_manager:
-                with self.gpu_manager.gpu_memory_context():
-                    yield
-            else:
+            with cm:
                 yield
         except Exception as e:
             logger.warning(f"GPU 메모리 컨텍스트 오류: {e}")
-            yield
     
     def get_model_info(self) -> Dict:
         """모델 정보 반환"""

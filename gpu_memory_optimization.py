@@ -6,6 +6,7 @@ import psutil
 import logging
 from typing import Optional, List
 import numpy as np
+from contextlib import contextmanager
 
 logger = logging.getLogger(__name__)
 
@@ -108,6 +109,17 @@ class GPUMemoryManager:
                 tf.config.experimental.reset_memory_stats('GPU:0')
         except Exception as e:
             logger.debug(f"Could not reset GPU memory stats: {e}")
+
+    @contextmanager
+    def gpu_memory_context(self):
+        """GPU 메모리 사용 컨텍스트 관리"""
+        try:
+            # 사전 메모리 정리로 여유 공간 확보
+            self._clear_memory()
+            yield
+        finally:
+            # 작업 후 메모리 정리
+            self._clear_memory()
 
 
 class MixedPrecisionStabilizer:
