@@ -75,7 +75,6 @@ certifi>=2023.7.22
 
 # Memory profiling (디버깅용, 선택적)
 memory-profiler>=0.61.0,<0.62.0
-psutil>=5.9.0,<6.1.0
 
 # Additional optimizations
 numba>=0.57.0,<0.61.0  # JIT 컴파일러 (선택적)
