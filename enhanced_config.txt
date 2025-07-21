@@ -1,0 +1,80 @@
+# Enhanced Streamlit Configuration
+# .streamlit/config.toml
+
+[theme]
+# 전문적인 금융 대시보드 테마
+primaryColor = "#1f77b4"
+backgroundColor = "#FFFFFF"
+secondaryBackgroundColor = "#f0f2f6"
+textColor = "#262730"
+font = "sans serif"
+
+[server]
+# 서버 설정
+port = 8501
+address = "0.0.0.0"
+enableCORS = true
+enableXsrfProtection = true
+maxUploadSize = 200
+maxMessageSize = 200
+enableWebsocketCompression = true
+headless = true
+
+# 파일 변경 감지
+fileWatcherType = "auto"
+folderWatchBlacklist = ["logs", "data/cache", "models/checkpoints"]
+
+[browser]
+# 브라우저 설정
+gatherUsageStats = false
+serverAddress = "localhost"
+serverPort = 8501
+
+[runner]
+# 실행 설정
+magicEnabled = true
+installTracer = false
+fixMatplotlib = true
+postScriptGC = true
+fastReruns = true
+
+# 멀티스레딩 설정
+enforceSerializableSessionState = false
+enumIncompatibility = "ERROR"
+
+[client]
+# 클라이언트 설정
+caching = true
+displayEnabled = true
+showErrorDetails = true
+toolbarMode = "auto"
+
+# 세션 상태 설정
+showSidebarNavigation = true
+showPageNavigation = true
+
+[logger]
+# 로깅 설정
+level = "info"
+messageFormat = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+enableRich = false
+
+[deprecation]
+# 경고 설정
+showfileUploaderEncoding = false
+showImageFormat = false
+showPyplotGlobalUse = false
+
+[cache]
+# 캐싱 설정
+persistDirectory = "./data/cache/streamlit"
+showWarningOnDirectExecution = true
+
+# 캐시 TTL 설정 (초)
+ttl = 3600
+maxEntries = 100
+
+[ui]
+# UI 설정
+hideTopBar = false
+hideSidebarNav = false
