@@ -22,7 +22,7 @@ This project contains a Streamlit dashboard and associated machine learning util
    cp env_example.sh .env
    # edit .env with your values or export variables manually
    ```
-   The application expects keys for DART, OpenAI and other services. Optional database and GPU settings can also be configured in this file.
+   The application expects keys for DART, NewsAPI and other services. Optional database and GPU settings can also be configured in this file. Set `NEWS_API_KEY` if you want the dashboard to fetch real articles for sentiment-based recommendations.
 
 ## Launching the Application
 
@@ -40,6 +40,8 @@ The dashboard will open in your default browser.
   - Requires a valid `DART_API_KEY` to access financial statements from the Korean market.
 - **Market data integration** (`market_data_integration.py`)
   - Pulls data from various sources (e.g., PyKRX, Alpha Vantage). API keys for these services should be placed in your environment configuration.
+- **News sentiment analysis** (`news_sentiment.py`)
+  - Optional module that fetches recent articles and scores sentiment. Requires a `NEWS_API_KEY` to enable real news recommendations.
 
 All modules are optional and the main Streamlit app will detect their availability based on your environment settings.
 
