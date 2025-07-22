@@ -6,7 +6,7 @@ DART_API_KEY=your_dart_api_key_here
 BOK_API_KEY=your_bank_of_korea_api_key_here
 ALPHA_VANTAGE_API_KEY=your_alpha_vantage_key_here
 OPENAI_API_KEY=your_openai_api_key_here
-NEWS_API_KEY=your_news_api_key_here
+NEWS_API_KEY=your_news_api_key_here  # enables Top Buys/Stop Loss suggestions
 
 # Database Configuration
 REDIS_HOST=localhost

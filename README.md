@@ -1,6 +1,9 @@
 # LSTM API Machine Learning Project
 
-This project contains a Streamlit dashboard and associated machine learning utilities for time series prediction. The main entry point is `streamlit_main_app.py`.
+This project provides a one‑click Streamlit dashboard that analyzes the latest
+market news and automatically suggests **Top Buys** and **Stop Loss** stocks based
+on sentiment.  It also includes time‑series prediction utilities for more
+advanced users.  The main entry point is `streamlit_main_app.py`.
 
 ## Environment Setup
 
@@ -30,7 +33,10 @@ Start the Streamlit dashboard using:
 ```bash
 streamlit run streamlit_main_app.py
 ```
-The dashboard will open in your default browser.
+The dashboard will open in your default browser. When it loads, it
+automatically fetches the most recent market news and presents recommended
+**Top Buys** and **Stop Loss** tickers. Use the "Refresh News" button at any
+time to update these suggestions.
 
 ## Optional Modules and Features
 
